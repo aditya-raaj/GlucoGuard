@@ -1,13 +1,17 @@
-# 🩺 Diabetes Classification with Machine Learning
+# 🩺 Gluco Guard: Diabetes Classification with Machine Learning
 
-## 📌 Overview
+
+
+
+## Overview
 This repository contains an end-to-end machine learning pipeline to classify diabetes-related outcomes using routine clinical features such as **Age, Urea, HbA1c, Cholesterol, Lipids, BMI, Kidney markers**, etc.  
 
 The dataset was **imbalanced**, with most patients falling into one class, so **balancing + recall optimization** was critical. The final model leverages **SMOTE + XGBoost** with hyperparameter tuning to maximize **recall on the minority class** (diabetes-positive), while keeping strong overall performance.  
 
 ---
 
-## 📊 Dataset
+
+## Dataset
 - **Source**: Clinical dataset (processed and saved as `polished_data.pkl`)  
 - **Features**:
   - Demographics: `Gender`, `Age`
@@ -21,7 +25,7 @@ This imbalance made naive models biased toward the majority class.
 
 ---
 
-## ⚙️ Preprocessing
+## Preprocessing
 1. **Cleaning & Standardization**:
  - Normalized categorical entries (`Gender`, `Class`)
  - Removed duplicates, dropped irrelevant IDs
@@ -35,7 +39,7 @@ This imbalance made naive models biased toward the majority class.
 
 ---
 
-## 🔬 Baseline Model Experiments
+## Baseline Model Experiments
 
 We tested several classifiers **without SMOTE** initially.  
 
@@ -46,13 +50,13 @@ We tested several classifiers **without SMOTE** initially.
 | SVM (RBF Kernel)      | ~0.89    | ~0.80    | Misclassified minority    |
 | XGBoost (default)     | ~0.93    | ~0.88    | Some improvement, but still biased |
 
-👉 **Observation**: Most models achieved **high accuracy** due to dominance of Class 2, but **failed recall on minority class (1)**.  
+**Observation**: Most models achieved **high accuracy** due to dominance of Class 2, but **failed recall on minority class (1)**.  
 
 This motivated use of **SMOTE + model tuning**.
 
 ---
 
-## ⚡ XGBoost with SMOTE (Final Model)
+## XGBoost with SMOTE (Final Model)
 
 We built an **imbalanced-learn pipeline**:
 
@@ -62,7 +66,7 @@ We built an **imbalanced-learn pipeline**:
 ---
 
 
-### 🎯 Hyperparameter Tuning
+### Hyperparameter Tuning
 - Performed **RandomizedSearchCV** over 25 configs  
 - Custom scorer = **Recall on Class 1**  
 - Best Params:
@@ -80,7 +84,7 @@ We built an **imbalanced-learn pipeline**:
 
 ---
 
-## ✅ Results (Test Set)
+## Results (Test Set)
 
 - **Accuracy**: 0.965
 - **Macro F1**: 0.945
@@ -98,14 +102,53 @@ We built an **imbalanced-learn pipeline**:
 
 ---
 
-👉 Why we selected XGBoost + SMOTE?
+## Why XGBoost + SMOTE?
 
-Outperformed baselines in both accuracy and macro-F1
+### 1. Performance vs. Baseline Models
+- Benchmarked Logistic Regression, SVM, Random Forest, and XGBoost.  
+- Simpler models reached **80–93% accuracy** but struggled with the **imbalanced dataset**.  
+- **XGBoost** captured non-linear feature interactions, achieving **96.5% accuracy** and highest F1-scores.
 
-Achieved perfect recall on minority class, critical in healthcare applications (false negatives = dangerous)
+### 2. Handling Class Imbalance with SMOTE
+- Dataset distribution was highly skewed (671 vs 82 vs 47).  
+- Without balancing, models ignored minority classes → many **false negatives**.  
+- **SMOTE** generated synthetic samples for underrepresented classes, boosting recall for minority class from **<40% → 100%**.
 
-Balanced tradeoff: high specificity + high sensitivity
+### 3. Recall is Critical in Healthcare
+- In medical diagnosis, **recall (sensitivity)** is more important than plain accuracy.  
+- A **false negative** (undiagnosed diabetes) can be life-threatening, while a false positive only triggers more testing.  
+- Our pipeline ensured **no missed diabetic cases** while keeping high precision.
+
+### 4. Balanced Trade-off
+- XGBoost’s **regularization (L1/L2, tree pruning)** prevented overfitting to synthetic samples.  
+- Final results:  
+  - **Accuracy**: 96.5%  
+  - **Precision**: High (few false alarms)  
+  - **Recall**: Perfect on minority class (no missed cases)  
+
+
+**Conclusion:**  
+We selected **XGBoost + SMOTE** because it outperformed baselines **and** eliminated the critical issue of false negatives, making it highly reliable for real-world healthcare deployment.
+
 
 
 ---
 
+
+## FastAPI Endpoint
+
+
+![FastAPI Endpoint](https://github.com/aditya-raaj/GlucoGuard/blob/main/templates/fastApi.png)
+*(Docs Endpoint preview showcasing different endpoints)*
+
+We exposed the trained model as a REST API using **FastAPI**.  
+- A `POST /predict/` endpoint accepts patient features in JSON, applies the same preprocessing (scaling + encoding), and returns the predicted diabetes class.  
+- The root endpoint `/` serves a static page or a JSON welcome message.  
+
+
+
+
+![FastAPI Endpoint](https://github.com/aditya-raaj/GlucoGuard/blob/main/templates/fastApi1.png)
+*(Docs Endpoint preview showcasing predict endpoint)*
+
+---
